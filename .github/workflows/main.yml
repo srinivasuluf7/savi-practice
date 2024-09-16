@@ -34,6 +34,14 @@ jobs:
          ECR_REGISTRY: ${{ steps.login-pf-aws-ecr.outputs.registry }}
          ECR_REPOSITORY: ${{secrets.REPO_NAME}}
          IMAGE_TAG: ${{ github.sha }}
+      
+      # Step 4: Build the Docker image
+      - name: Build Docker image
         run: |
-         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker build -t simple-app .
+          docker tag simple-app:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/simple-app-repo:latest
+
+      # Step 5: Push Docker image to Amazon ECR
+      - name: Push Docker image to ECR
+        run: |
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/simple-app-repo:latest
