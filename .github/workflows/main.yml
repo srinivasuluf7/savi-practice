@@ -34,22 +34,4 @@ jobs:
         run: |
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hello-world-repo:latest
 
-      # Step 6: Deploy to AWS Fargate using AWS CLI
-      - name: Deploy to AWS Fargate
-        env:
-          CLUSTER_NAME: your-cluster-name
-          SERVICE_NAME: your-service-name
-          TASK_DEFINITION: your-task-def
-          CONTAINER_NAME: hello-world-app
-          IMAGE_URI: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hello-world-repo:latest
-        run: |
-          # Create or update the task definition.
-          TASK_DEFINITION_JSON=$(aws ecs describe-task-definition --task-definition $TASK_DEFINITION)
-          NEW_TASK_DEF=$(echo $TASK_DEFINITION_JSON | jq --arg IMAGE_URI "$IMAGE_URI" '.taskDefinition | .containerDefinitions[0].image = $IMAGE_URI')
-
-          # Register the new task definition.
-          NEW_TASK_DEF_ARN=$(echo $NEW_TASK_DEF | jq -r '.taskDefinitionArn')
-          aws ecs register-task-definition --cli-input-json "$NEW_TASK_DEF"
-
-          # Update the ECS service to use the new task definition.
-          aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --task-definition $NEW_TASK_DEF_ARN
+     
