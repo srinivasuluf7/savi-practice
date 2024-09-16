@@ -23,7 +23,10 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
         with:
-          region: ${{ secrets.AWS_REGION }}
+          region: us-east-1
+          mask-password: false
+          registry-type: private
+          skip-logout: false
 
       # Step 4: Build the Docker image
       - name: Build Docker image
