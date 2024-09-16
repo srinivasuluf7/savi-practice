@@ -33,7 +33,6 @@ jobs:
         env:
          ECR_REGISTRY: ${{ steps.login-pf-aws-ecr.outputs.registry }}
          ECR_REPOSITORY: ${{secrets.REPO_NAME}}
-         IMAGE_TAG: ${{ github.sha }}
       
       # Step 4: Build the Docker image
       - name: Build Docker image
