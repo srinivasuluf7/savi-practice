@@ -1,0 +1,55 @@
+name: Build and Deploy to AWS Fargate
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the code from the repository.
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Step 2: Set up Docker Buildx (to allow multi-platform builds).
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      # Step 3: Log in to Amazon ECR.
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      # Step 4: Build the Docker image.
+      - name: Build the Docker image
+        run: |
+          docker build -t hello-world-app .
+          docker tag hello-world-app:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hello-world-repo:latest
+
+      # Step 5: Push the image to Amazon ECR.
+      - name: Push Docker image to ECR
+        run: |
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hello-world-repo:latest
+
+      # Step 6: Deploy to AWS Fargate using AWS CLI
+      - name: Deploy to AWS Fargate
+        env:
+          CLUSTER_NAME: your-cluster-name
+          SERVICE_NAME: your-service-name
+          TASK_DEFINITION: your-task-def
+          CONTAINER_NAME: hello-world-app
+          IMAGE_URI: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hello-world-repo:latest
+        run: |
+          # Create or update the task definition.
+          TASK_DEFINITION_JSON=$(aws ecs describe-task-definition --task-definition $TASK_DEFINITION)
+          NEW_TASK_DEF=$(echo $TASK_DEFINITION_JSON | jq --arg IMAGE_URI "$IMAGE_URI" '.taskDefinition | .containerDefinitions[0].image = $IMAGE_URI')
+
+          # Register the new task definition.
+          NEW_TASK_DEF_ARN=$(echo $NEW_TASK_DEF | jq -r '.taskDefinitionArn')
+          aws ecs register-task-definition --cli-input-json "$NEW_TASK_DEF"
+
+          # Update the ECS service to use the new task definition.
+          aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --task-definition $NEW_TASK_DEF_ARN
