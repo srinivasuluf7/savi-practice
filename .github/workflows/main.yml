@@ -1,4 +1,4 @@
-name: Build and Push Docker Image to ECR
+name: Build and Push Docker Image
 
 on:
   push:
@@ -10,31 +10,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the code
+      # Checkout the code
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Step 2: Set up Docker Buildx
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Setup AWS ECR Details
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{secrets.AWS_REGION}}
-      # Step 3: Log in to Amazon ECR  
+      # Log in to Amazon ECR
       - name: Log in to Amazon ECR
-        id: login-pf-aws-ecr
+        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
-      
-      # Step 4: Build the Docker image
-      - name: Build Docker image
+
+      # Build and push the Docker image
+      - name: Build and push Docker image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{secrets.REPO_NAME}}
-          IMAGE_TAG: 998054510307.dkr.ecr.us-east-1.amazonaws.com/simple-app-repo:latest
+          ECR_REPOSITORY: ${{ secrets.REPO_NAME }}  # Set this in GitHub Secrets
+          IMAGE_TAG: ${{ github.sha }}  # Use commit SHA as the tag
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
